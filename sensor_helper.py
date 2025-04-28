@@ -1,29 +1,52 @@
 import ctypes 
 import numpy as np
 import pandas as pd
-from astrostandards.utils import helpers
+# from astrostandards.utils import helpers
 
 # -----------------------------------------------------------------------------------------------------
-def llh_to_eci( lat : float,
-                lon : float,
-                alt : float,
-                df : list[ float ],
+def llh_to_eci( df : list[ float ],
                 INTERFACE ) :
     '''
     given a lat / lon / alt tuple and a set of astrostandard epoch'd dates,
     give back the ECI position (TEME)
     '''
     sen_eci = (ctypes.c_double * 3)()
-    llh = (ctypes.c_double * 3)( lat, lon, alt )
-    def getECI( ds50u ):
-        INTERFACE.AstroFuncDll.LLHToXYZTime( ds50u, llh, sen_eci )
+    def getECI( R ):
+        llh = (ctypes.c_double * 3)( R['lat'], R['lon'], R['height'] )
+        INTERFACE.AstroFuncDll.LLHToXYZTime( R['ds50_utc'], llh, sen_eci )
         return list( sen_eci )
-    return [ getECI(X) for X in df['ds50_utc'] ]
+    df['eci_p'] =  df.apply( getECI, axis=1 )
+    return df
+
+
+# -----------------------------------------------------------------------------------------------------
+def eci_to_llh( df : list[ float ],
+                INTERFACE ) :
+    '''
+    given a dataframe with columns `eci_p` and `ds50_utc`, covert the 
+    eci coordinates to llh
+    '''
+    llh  = (ctypes.c_double * 3)()
+    
+    def getLLH( R ):
+        eci = (ctypes.c_double * 3)( *R['eci_p'] )
+        INTERFACE.AstroFuncDll.XYZToLLHTime( R['ds50_utc'], eci, llh ) 
+        return list( llh )
+    
+    tv = df.apply( getLLH, axis=1 )
+    df['lat']    = [ T[0] for T in tv ]
+    df['lon']    = [ T[1] for T in tv ]
+    df['height'] = [ T[2] for T in tv ]
+    return df
 
 
 # -----------------------------------------------------------------------------------------------------
 def sun_at_time(  df : pd.DataFrame, # must have the times set
                   INTERFACE ):
+    '''
+    given a set of dates in the format output by time_helpers.convert_times, output the 
+    sun position at those times
+    '''
     sun_v  = (ctypes.c_double * 3)()
     sun_m  = ctypes.c_double()
     # the routine gives us a look vector and magnitude
@@ -37,6 +60,10 @@ def sun_at_time(  df : pd.DataFrame, # must have the times set
 # -----------------------------------------------------------------------------------------------------
 def moon_at_time(  df : pd.DataFrame, # must have the times set
                   INTERFACE ):
+    '''
+    given a set of dates in the format output by time_helpers.convert_times, output the 
+    moon position at those times
+    '''
     sun_v  = (ctypes.c_double * 3)()
     sun_m  = ctypes.c_double()
     # the routine gives us a look vector and magnitude
@@ -70,9 +97,19 @@ if __name__ == "__main__":
 
 
     # test the llh_to_eci function
-    dates_f['sensor_eci'] = llh_to_eci( 0, 0, 0, dates_f, harness )
+    dates_f ['lat']    = 0
+    dates_f ['lon']    = 0
+    dates_f ['height'] = 0
+    dates_f = llh_to_eci( dates_f, harness )
     print(dates_f)
 
-    print( sun_at_time( dates_f, harness ) )
-    print( moon_at_time( dates_f, harness ) )
+    # annotate that dataframe wih the sun position
+    dates_f['sun_eci_p']  = sun_at_time( dates_f, harness ) 
+    dates_f['moon_eci_p'] = moon_at_time( dates_f, harness ) 
+    
+    dates_f['eci_p'] = dates_f['sun_eci_p']
+    eci_to_llh( dates_f, harness )
+    
+    print(dates_f)
+    
 

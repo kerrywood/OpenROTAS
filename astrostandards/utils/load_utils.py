@@ -49,23 +49,9 @@ FUNC_ORDER = (
     VcmDll.VcmInit,
     ExtEphemDll.ExtEphInit,
     Sgp4PropDll.Sgp4Init,
-    SpPropDll.SpInit,
-    ElOpsDll.ElOpsInit,
     SatStateDll.SatStateInit,
     SensorDll.SensorInit,
     ObsDll.ObsInit,
-    ObsOpsDll.ObsOpsInit,
-    LamodDll.LamodInit,
-    RotasDll.RotasInit,
-    BatchDCDll.BatchDCInit,
-#    BamDll.BamInit,
-#    CocoDll.CocoInit,
-    ComboDll.ComboInit,
-    ElCompDll.ElCompInit,
-#    ElOpsDll.ElOpsInit,
-#    FovDll.FovInit,
-    LamodDll.LamodInit,
-#    SaasDll.SaasInit,
 )
 # -----------------------------------------------------------------------------------------------------
 def init_all( logfile='aslog.txt', verbose=True ):
