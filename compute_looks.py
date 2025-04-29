@@ -81,7 +81,7 @@ if __name__ == "__main__":
     harness.TimeFuncDll.TimeFuncLoadFile(  harness.Cstr('./full_time_constants.dat',512) )
 
     # generate some test data
-    now   = datetime.now( timezone.utc )
+    now   = datetime( year=2025, month=4, day=30 )
     dates = [ now + timedelta( minutes=X ) for X in range(0,1440) ]
     # use the time_helpers to initialize the dataframe with times
     dates_f = time_helpers.convert_times( dates, harness )
@@ -104,11 +104,10 @@ if __name__ == "__main__":
 
     # calculate the looks    
     results = compute_looks( sensor_f, target_f, harness )
-    print( results )
-    # look at the elevation
-    print( results['XA_TOPO_EL']) 
     # find those entries when the sun is down
-    print( results[ results['XA_TOPO_EL'] < 0 ] )
-
-
-
+    sundown = results[ results['XA_TOPO_EL'] < 0 ]
+    # show those times when there's a big jump
+    idx = np.where( np.diff( sundown['ds50_utc_sensor'] ) > 10/1440 ) 
+    # print(idx)
+    # print( sundown['datetime_sensor'].values )
+    for i in idx: print( sundown.iloc[i])
