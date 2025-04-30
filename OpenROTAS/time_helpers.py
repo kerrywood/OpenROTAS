@@ -29,9 +29,14 @@ from astrostandards.utils import helpers
 # -----------------------------------------------------------------------------------------------------
 def convert_times( datetimes : list[ datetime ] ,
                    INTERFACE ):
-    
-    # convert the datetimes to astrostandard epochs
-    ds50_utc = [ helpers.datetime_to_ds50( X, INTERFACE.TimeFuncDll ) for X in datetimes ]
+        # convert the datetimes to astrostandard epochs
+    def safeConvert( dt ):
+        try :
+            return helpers.datetime_to_ds50( dt, INTERFACE.TimeFuncDll )
+        except Exception as e: 
+            return -1 
+        
+    ds50_utc = [ safeConvert(X) for X in datetimes ]
 
     return pd.DataFrame( 
            [ { 'datetime' : X,
