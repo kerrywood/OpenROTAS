@@ -1,6 +1,8 @@
-import ctypes 
+import sys
+import ctypes
 import numpy as np
 import pandas as pd
+from OpenROTAS.time_helpers import *
 # from astrostandards.utils import helpers
 
 # -----------------------------------------------------------------------------------------------------
@@ -18,6 +20,20 @@ def llh_to_eci( df : list[ float ],
     df['teme_p'] =  df.apply( getECI, axis=1 )
     return df
 
+# -----------------------------------------------------------------------------------------------------
+def llh_to_efg( df : list[ float ],
+                INTERFACE) :
+    '''
+    given a lat / lon / height tuple ,
+    give back the EFG position (ECEF)
+    '''
+    sen_efg = (ctypes.c_double * 3)()
+    def getEFG( R ):
+        llh = (ctypes.c_double * 3)(R['lat'], R['lon'], R['height'])
+        INTERFACE.AstroFuncDll.LLHToEFGPos(llh, sen_efg)
+        return list( sen_efg )
+    df['efg_p'] = df.apply( getEFG, axis=1 )
+    return df
 
 # -----------------------------------------------------------------------------------------------------
 def eci_to_llh( df : list[ float ],
@@ -30,7 +46,9 @@ def eci_to_llh( df : list[ float ],
     
     def getLLH( R ):
         eci = (ctypes.c_double * 3)( *R['teme_p'] )
-        INTERFACE.AstroFuncDll.XYZToLLHTime( R['ds50_utc'], eci, llh ) 
+
+        INTERFACE.AstroFuncDll.XYZToLLHTime( R['ds50_utc'], eci, llh )
+
         return list( llh )
     
     tv = df.apply( getLLH, axis=1 )

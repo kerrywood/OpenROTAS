@@ -22,7 +22,8 @@
 # SOFTWARE.
 # ###############################################################################
 
-from datetime import datetime 
+import math
+from datetime import datetime, timedelta
 import pandas as pd
 from astrostandards.utils import helpers
 
@@ -38,12 +39,15 @@ def convert_times( datetimes : list[ datetime ] ,
         
     ds50_utc = [ safeConvert(X) for X in datetimes ]
 
+    # Convert ds50UTC to ds50UT1
+    ds50_ut1 = [INTERFACE.TimeFuncDll.UTCToUT1(X) for X in ds50_utc]
+
     return pd.DataFrame( 
            [ { 'datetime' : X,
-               'theta'    : INTERFACE.TimeFuncDll.ThetaGrnwchFK5( Y ),
+               'theta'    : INTERFACE.TimeFuncDll.ThetaGrnwchFK5( Z ),
                'ds50_utc' : Y,
                'ds50_et'  : INTERFACE.TimeFuncDll.UTCToET( Y ),
-               'ds50_ut1' : INTERFACE.TimeFuncDll.UTCToUT1( Y ) } for X,Y in zip(datetimes,ds50_utc) ])
+               'ds50_ut1' : Z } for X,Y,Z in zip(datetimes,ds50_utc,ds50_ut1) ])
 
 
 # ==================================================================================================
@@ -58,7 +62,7 @@ if __name__ == '__main__':
     harness.init_all()
 
     # use the TimeFunc to load the time parameters file (need to upate this periodically)
-    harness.TimeFuncDll.TimeFuncLoadFile(  harness.Cstr('./full_time_constants.dat',512) )
+    harness.TimeFunc.TimeFuncLoadFile(  harness.Cstr('./full_time_constants.dat',512) )
 
     # generate some test data
     now   = datetime.utcnow()

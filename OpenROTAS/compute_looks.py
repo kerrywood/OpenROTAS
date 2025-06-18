@@ -22,6 +22,7 @@
 # SOFTWARE.
 # ###############################################################################
 
+import sys
 import ctypes 
 import numpy as np
 import pandas as pd
@@ -40,7 +41,7 @@ def compute_looks(     df_sensor : pd.DataFrame,
         '''
     # we need a data holder for the output of ECIToTopoComps
     TOPO = helpers.astrostd_named_fields( INTERFACE.AstroFuncDll, prefix='XA_TOPO_' )
-    
+
     # check that the dates are aligned
     for A,B in zip( df_object['ds50_utc'].values, df_sensor['ds50_utc'].values) : 
         assert np.isclose(A,B,.0000001)
@@ -52,14 +53,18 @@ def compute_looks(     df_sensor : pd.DataFrame,
         lst = np.radians( R['lon_sensor'] ) + R['theta_sensor']
         if 'eci_v_object' in R: 
             eci_v_object = (ctypes.c_double * 3)( *R['eci_v_object'] )
+        elif 'teme_v_object' in R:
+            eci_v_object = (ctypes.c_double * 3)( *R['teme_v_object'] )
         else: 
             eci_v_object = (ctypes.c_double * 3)(0,0,0)
-        INTERFACE.AstroFuncDll.ECIToTopoComps( lst, 
-                                               R['lat_sensor'], 
-                                               (ctypes.c_double * 3) (*R['teme_p_sensor']), 
-                                               (ctypes.c_double * 3) (*R['teme_p_object']), 
-                                               eci_v_object, 
+
+        INTERFACE.AstroFuncDll.ECIToTopoComps( lst,
+                                               R['lat_sensor'],
+                                               (ctypes.c_double * 3) (*R['teme_p_sensor']),
+                                               (ctypes.c_double * 3) (*R['teme_p_object']),
+                                               eci_v_object,
                                                TOPO.data )
+
         # INTERFACE.AstroFuncDll.ECIToTopoComps( lst, lat, sen_eci, sun_p, fake_v, SUN_TOPO.data )
         return TOPO.toDict()    
 

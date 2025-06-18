@@ -29,6 +29,31 @@ import numpy as np
 import json
 import ctypes
 
+
+saal_name_dict = {}
+# Indexes for topocentric components
+# Right ascension (deg)
+saal_name_dict['XA_TOPO_RA']    = 0
+# Declination (deg)
+saal_name_dict['XA_TOPO_DEC']   = 1
+# Azimuth (deg)
+saal_name_dict['XA_TOPO_AZ']    = 2
+# Elevation (deg)
+saal_name_dict['XA_TOPO_EL']    = 3
+# Range (km)
+saal_name_dict['XA_TOPO_RANGE'] = 4
+# Right ascension dot (deg/s)
+saal_name_dict['XA_TOPO_RADOT'] = 5
+# Declincation dot (deg/s)
+saal_name_dict['XA_TOPO_DECDOT'] = 6
+# Azimuth dot (deg/s)
+saal_name_dict['XA_TOPO_AZDOT'] = 7
+# Elevation dot (deg/s)
+saal_name_dict['XA_TOPO_ELDOT'] = 8
+# Range dot (km/s)
+saal_name_dict['XA_TOPO_RANGEDOT'] = 9
+saal_name_dict['XA_TOPO_SIZE']  = 10
+
 # -----------------------------------------------------------------------------------------------------
 def Cstr( S, slen=128 ):
     stbuf = ctypes.create_string_buffer( slen )
@@ -72,13 +97,16 @@ class astrostd_named_fields(dict):
         self.datatype  = datatype
 
         # get the names
-        self.param_names = list( filter( lambda X: X.startswith(prefix) , dir(DLL) ) )
+        #self.param_names = list( filter( lambda X: X.startswith(prefix) , dir(DLL) ) )
+        self.param_names = list(filter(lambda X: X.startswith(prefix), saal_name_dict.keys()))
 
         for name in self.param_names:
             if name.endswith("_SIZE"):
-                self.param_max = int(getattr( DLL, name ))
+                #self.param_max = int(getattr( DLL, name ))
+                self.param_max = int(saal_name_dict[name])
                 continue
-            num = int(getattr( DLL, name ))  # these are locations, so they must be integers
+            #num = int(getattr( DLL, name ))  # these are locations, so they must be integers
+            num = int(saal_name_dict[name])
             self.name2num[ name ] = num
             self.num2name[ num ] = name
 
