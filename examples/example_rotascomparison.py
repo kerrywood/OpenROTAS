@@ -42,6 +42,21 @@ def add_sensor( sensor_number , harness):
                                         99999,
                                         ctypes.c_char(b'U'))
 # -----------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------
+def addTLE( L1  : str, L2 : str, harness ):
+    # load the TLE and init SGP4
+    tleid = harness.TleDll.TleAddSatFrLines(
+                                          harness.Cstr(L1, 512),
+                                          harness.Cstr(L2, 512))
+    # assert that TLE was added 
+    assert tleid > 0
+    # init the TLE
+    assert harness.Sgp4PropDll.Sgp4InitSat( tleid ) == 0
+    return tleid
+
+# -----------------------------------------------------------------------------------------------------
+                                            
                                             
 
 def plot_trajectories(sat1_positions, sat2_positions):
@@ -236,6 +251,18 @@ if __name__ == '__main__':
     harness.ObsDll.ObsGetField(obKey, 19, posx)
     print('Ob snsr position X:', posx.value)
 
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # KNW : so, that sgp4_prop routine removes all TLE's when it is called; since you did two TLE's, you blew
+    # the first one away and it is no longer loaded in the astrostandards
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    print('Re-setting, reloading, and init-ing TLE')
+    harness.TleDll.TleRemoveAllSats()
+    harness.Sgp4PropDll.Sgp4RemoveAllSats()
+    iss_key = addTLE( 
+                    '1 25544U 98067A   25119.19035294  .00013779  00000-0  25440-3 0  9996',
+                    '2 25544  51.6352 189.7367 0002491  81.0639 279.0631 15.49383308507563',
+                    harness )
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     # JW - code block for debugging
     # Perturb the ra/dec measurements until we find something that associates
