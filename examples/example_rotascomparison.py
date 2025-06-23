@@ -24,6 +24,26 @@ from dnd.math.linalg.vectors._vector_3d import Vector3D
 # SOFTWARE.
 # ###############################################################################
 
+# -----------------------------------------------------------------------------------------------------
+# KNW : make sure to add a sensor that corresponds to your obs.. because AstroStandards
+def add_sensor( sensor_number , harness):
+    # this can be nonsensical because you're going to use type-9
+    posECR = (ctypes.c_double * 3)(0.,0.,0.)
+    # need a name
+    sensor_name = ctypes.create_string_buffer( 24 )
+    sensor_name.value = 'SUPERCOOLSENSOR'.encode()
+
+    return harness.SensorDll.SensorSetLocAll(   
+                                        sensor_number,
+                                        0.,
+                                        0.,
+                                        posECR,
+                                        sensor_name, 
+                                        99999,
+                                        ctypes.c_char(b'U'))
+# -----------------------------------------------------------------------------------------------------
+                                            
+
 def plot_trajectories(sat1_positions, sat2_positions):
     import numpy as np
     import matplotlib.pyplot as plt
@@ -156,7 +176,8 @@ if __name__ == '__main__':
     ## STEP 1 : set up the AstroStandards DLL's and init the time constants
     # init all the Dll's
     if sys.platform.startswith('linux'):
-        from astrostandards.utils import load_utils as harness
+        #from astrostandards.utils import load_utils as harness
+        import load_utils as harness
         harness.init_all()
     elif sys.platform.startswith('win'):
         from utils.astrostds import AstroStds
@@ -201,15 +222,20 @@ if __name__ == '__main__':
     #print(looks[['datetime_sensor','XA_TOPO_RANGE','XA_TOPO_AZ','XA_TOPO_EL','XA_TOPO_RA','XA_TOPO_DEC']] )
     #print(looks.columns)
 
-
     # Create an xa_obs array for a type 8 ob (azimuth, elevation, sensor location)
     snsr_pos_efg = tdrs_df.iloc[0].efg_p
     obKey = create_observation(looks.iloc[0], snsr_pos_efg, harness)
 
+    # -----------------------------------------------------------------------------------------------------
+    # KNW : add in the sensor
+    add_sensor( 504, harness )
+    # -----------------------------------------------------------------------------------------------------
+
     # Check that the ob was created
-    posx = ctypes.create_string_buffer(513)
+    posx = ctypes.create_string_buffer(512)
     harness.ObsDll.ObsGetField(obKey, 19, posx)
     print('Ob snsr position X:', posx.value)
+
 
     # JW - code block for debugging
     # Perturb the ra/dec measurements until we find something that associates
@@ -220,8 +246,13 @@ if __name__ == '__main__':
             harness.ObsDll.ObsSetField(obKey, ctypes.c_int(8), harness.Cstr(str(ra), 512))
             harness.ObsDll.ObsSetField(obKey, ctypes.c_int(6), harness.Cstr(str(dec), 512))
             astat_bool = harness.RotasDll.RotasHasASTAT(obKey, iss_key)
-            if astat_bool: break
-        if astat_bool: break
+            # some output to see if it is working 
+            print('-'*100)
+            print('(KNW) : this is my astat bool', astat_bool)
+            print('-'*100)
+            print()
+            if astat_bool == 1: break
+        if astat_bool == 1: break
 
     # Hopefully there's a combination of ra/dec that generated an association, printing to screen
     print("RA:", ra, "Dec:", dec)
