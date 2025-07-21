@@ -56,8 +56,6 @@ def addTLE( L1  : str, L2 : str, harness ):
     return tleid
 
 # -----------------------------------------------------------------------------------------------------
-                                            
-                                            
 
 def plot_trajectories(sat1_positions, sat2_positions):
     import numpy as np
@@ -149,28 +147,76 @@ def create_observation(X, snsr_pos_efg, INTERFACE):
         ctypes.c_int(4881), # spadoc tag
         c_snsr_pos,
         c_vel,
-        c_ext_arr,
+        c_ext_arr
     )
 
-    '''
-    ob = looks.iloc[0]
-    c_double_64 = ctypes.c_double * 64
-    xa_obs = c_double_64()
-    xa_obs[0] = ctypes.c_double(1)  # classification 1 = Unclassified, 2 = Confidential, 3 = SECRET
-    xa_obs[1] = ctypes.c_double(4881)  # satellite number
-    xa_obs[2] = ctypes.c_double(504)  # sensor number
-    xa_obs[3] = ctypes.c_double(ob.ds50_utc_sensor)  # observation time in days since 1950 UTC
-    xa_obs[11] = ctypes.c_double(9)  # ob type
-    xa_obs[4] = ctypes.c_double(ob.XA_TOPO_DEC)  # declination
-    xa_obs[5] = ctypes.c_double(ob.XA_TOPO_RA)  # right ascension
-    xa_obs[16] = ctypes.c_double(snsr_pos_efg[0])
-    xa_obs[17] = ctypes.c_double(snsr_pos_efg[1])
-    xa_obs[18] = ctypes.c_double(snsr_pos_efg[2])
-    # Create an Obs object from the array
-    obKey = harness.ObsDll.ObsAddFrArray(xa_obs)
-    '''
-
     return obKey
+
+
+def plot_residuals(datetimes, res1, res1_name, res2, res2_name, astats):
+    import matplotlib.pyplot as plt
+    import matplotlib.lines as mlines
+
+    # Define marker styles for each discrete value
+    marker_map = {
+        0: ('x', 'ASTAT 0'),
+        1: ('o', 'ASTAT 1'),
+        2: ('s', 'ASTAT 2'),
+        3: ('^', 'ASTAT 3'),
+        4: ('D', 'ASTAT 4'),
+    }
+
+    # Color palette
+    color1 = '#1f77b4'  # Blue
+    color2 = '#ff7f0e'  # Orange
+
+    x = datetimes
+    y1 = np.array(res1)
+    y2 = np.array(res2)
+
+    # Create plot with primary y-axis
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    # Apply grid
+    ax1.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+
+    # Plot y1 with marker styles based on marker_type
+    for val in np.unique(astats):
+        (marker, _) = marker_map[val]
+        mask = astats == val
+        ax1.scatter(x[mask], y1[mask], marker=marker, color=color1, s=10)
+
+    ax1.set_ylabel(res1_name, color=color1, fontsize=12, fontweight='bold')
+    #ax1.tick_params(axis='y', labelcolor=color1)
+    ax1.set_xlabel('Times', fontsize=12, fontweight='bold')
+
+    # Create secondary y-axis
+    ax2 = ax1.twinx()
+
+    # Plot y2 with marker styles based on marker_type
+    for val in np.unique(astats):
+        (marker, _) = marker_map[val]
+        mask = astats == val
+        ax2.scatter(x[mask], y2[mask], marker=marker, color=color2, s=10)
+    ax2.set_ylabel(res2_name, color=color2, fontsize=12, fontweight='bold')
+    #ax2.tick_params(axis='y', labelcolor=color2)
+
+    # Custom legend with one entry per marker type
+    legend_handles = [
+        mlines.Line2D([], [], color='black', marker=marker, linestyle='None', markersize=8, label=label)
+        for marker, label in marker_map.values()
+    ]
+
+    fig.legend(legend_handles, [label for _, label in marker_map.values()],
+               loc='upper center', bbox_to_anchor=(0.5, 0.95), ncol=5, frameon=False, fontsize=10)
+
+    plt.tight_layout()
+    y1_max = max(y1)
+    y2_max = max(y2)
+    y_max = max(y1_max,y2_max)
+    ax1.set_ylim(top=y_max * 1.4)
+    ax2.set_ylim(top=y_max * 1.4)
+    plt.show()
 
 
 # =====================================================================================================
@@ -186,6 +232,21 @@ if __name__ == '__main__':
     from OpenROTAS import sgp4_prop
     from OpenROTAS import sensor_helper
     from OpenROTAS import compute_looks
+
+    from utils.wrappers.RotasWrapper import (
+        XA_OBSRES_AGE,
+        XA_OBSRES_ASTAT,
+        XA_OBSRES_AZ,
+        XA_OBSRES_BETA,
+        XA_OBSRES_DEC,
+        XA_OBSRES_DELTAT,
+        XA_OBSRES_HEIGHT,
+        XA_OBSRES_POSU,
+        XA_OBSRES_POSV,
+        XA_OBSRES_POSW,
+        XA_OBSRES_RA,
+        XA_OBSRES_SIZE
+    )
 
 
     ## STEP 1 : set up the AstroStandards DLL's and init the time constants
@@ -219,6 +280,7 @@ if __name__ == '__main__':
                                     harness )
     iss_df = pd.concat( (dates_f.copy(), iss_ephem), axis=1 )
     iss_df = sensor_helper.eci_to_llh( iss_df, harness )
+    iss_df = sensor_helper.llh_to_efg(iss_df, harness)
     
     tdrs_key, tdrs_ephem = sgp4_prop.sgp4_prop(
                                     '1 27566U 02055A   25119.03837147 -.00000224  00000-0  00000+0 0  9997',
@@ -232,74 +294,62 @@ if __name__ == '__main__':
     ## STEP 4 : compute looks from LEO to GEO
     looks = compute_looks.compute_looks( iss_df, tdrs_df, harness )
 
-    looks_reversed = compute_looks.compute_looks(tdrs_df, iss_df, harness)
-    # dates are duplicated because we fused the frames for looks, "sensor" is the sensor column
-    #print(looks[['datetime_sensor','XA_TOPO_RANGE','XA_TOPO_AZ','XA_TOPO_EL','XA_TOPO_RA','XA_TOPO_DEC']] )
-    #print(looks.columns)
-
-    # Create an xa_obs array for a type 8 ob (azimuth, elevation, sensor location)
-    snsr_pos_efg = tdrs_df.iloc[0].efg_p
-    obKey = create_observation(looks.iloc[0], snsr_pos_efg, harness)
-
     # -----------------------------------------------------------------------------------------------------
     # KNW : add in the sensor
     add_sensor( 504, harness )
     # -----------------------------------------------------------------------------------------------------
 
-    # Check that the ob was created
-    posx = ctypes.create_string_buffer(512)
-    harness.ObsDll.ObsGetField(obKey, 19, posx)
-    print('Ob snsr position X:', posx.value)
-
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # JAW: Turns out, we didn't need this block
     # KNW : so, that sgp4_prop routine removes all TLE's when it is called; since you did two TLE's, you blew
     # the first one away and it is no longer loaded in the astrostandards
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    print('Re-setting, reloading, and init-ing TLE')
-    harness.TleDll.TleRemoveAllSats()
-    harness.Sgp4PropDll.Sgp4RemoveAllSats()
-    iss_key = addTLE( 
-                    '1 25544U 98067A   25119.19035294  .00013779  00000-0  25440-3 0  9996',
-                    '2 25544  51.6352 189.7367 0002491  81.0639 279.0631 15.49383308507563',
-                    harness )
+    #print('Re-setting, reloading, and init-ing TLE')
+    #harness.TleDll.TleRemoveAllSats()
+    #harness.Sgp4PropDll.Sgp4RemoveAllSats()
+    #iss_key = addTLE(
+    #                '1 25544U 98067A   25119.19035294  .00013779  00000-0  25440-3 0  9996',
+    #                '2 25544  51.6352 189.7367 0002491  81.0639 279.0631 15.49383308507563',
+    #                harness )
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    # JW - code block for debugging
-    # Perturb the ra/dec measurements until we find something that associates
-    ras = np.arange(-180, 181, 0.1)
-    decs = np.arange(-90, 91, 0.1)
-    for ra in ras:
-        for dec in decs:
-            harness.ObsDll.ObsSetField(obKey, ctypes.c_int(8), harness.Cstr(str(ra), 512))
-            harness.ObsDll.ObsSetField(obKey, ctypes.c_int(6), harness.Cstr(str(dec), 512))
-            astat_bool = harness.RotasDll.RotasHasASTAT(obKey, iss_key)
-            # some output to see if it is working 
-            print('-'*100)
-            print('(KNW) : this is my astat bool', astat_bool)
-            print('-'*100)
-            print()
-            if astat_bool == 1: break
-        if astat_bool == 1: break
-
-    # Hopefully there's a combination of ra/dec that generated an association, printing to screen
-    print("RA:", ra, "Dec:", dec)
-
-    # Check to see if a single ob associates
-    astat_bool = harness.RotasDll.RotasHasASTAT(obKey, iss_key)
+    # Calculate the residuals for each ob
+    astats, ra_res, dec_res, t_res, beta_res = [], [], [], [], []
 
     # JW - function for debugging
     # Plotting the trajectory of the sensor and object to ensure LOS
-    #plot_trajectories(iss_ephem.teme_p, tdrs_ephem.teme_p)
+    # plot_trajectories(iss_ephem.teme_p, tdrs_ephem.teme_p)
 
-    # Create variables to hold the ROTAS output info
-    c_double_100 = ctypes.c_double * 100
-    c_double_9 = ctypes.c_double * 9
-    xa_ObsRes = c_double_100()
-    satElts = c_double_9()
-    obElts = c_double_9()
+    for ob_idx in range(len(looks)):
 
-    # Compute ROTAS residuals
-    error_code = harness.RotasDll.RotasComputeObsResiduals(obKey, iss_key, xa_ObsRes, satElts, obElts)
-    print(error_code)
-    print('xa_ObsRes:', xa_ObsRes[0:10])
-    print()
+        # Create an xa_obs array for a type 8 ob (azimuth, elevation, sensor location)
+        snsr_pos_efg = iss_df.iloc[ob_idx].efg_p
+        obKey = create_observation(looks.iloc[ob_idx], snsr_pos_efg, harness)
+
+        # Check to see if a single ob associates
+        astat_bool = harness.RotasDll.RotasHasASTAT(obKey, tdrs_key)
+
+        # Create variables to hold the ROTAS output info
+        xa_ObsRes = (ctypes.c_double * XA_OBSRES_SIZE)()
+        satElts = (ctypes.c_double * 9)()
+        obElts = (ctypes.c_double * 9)()
+
+        # Compute ROTAS residuals
+        if astat_bool:
+            error_code = harness.RotasDll.RotasComputeObsResiduals(obKey, tdrs_key, xa_ObsRes, satElts, obElts)
+            if not error_code:
+                astats.append(xa_ObsRes[XA_OBSRES_ASTAT])
+                ra_res.append(xa_ObsRes[XA_OBSRES_RA])
+                dec_res.append(xa_ObsRes[XA_OBSRES_DEC])
+                t_res.append(xa_ObsRes[XA_OBSRES_DELTAT])
+                beta_res.append(xa_ObsRes[XA_OBSRES_BETA])
+            else:
+                print('Error calculating resiudals!')
+
+    # Plot RA/DEC residuals
+    plot_residuals(looks.datetime_object, ra_res, 'Right Ascension Residuals [deg]', dec_res, 'Declination Residuals [deg]', astats)
+
+    # Plot Beta and deltaT residuals
+    plot_residuals(looks.datetime_object, t_res, 'deltaT', beta_res, 'Beta', astats)
+
+    # Plot Beta slope and deltaT slope residuals
