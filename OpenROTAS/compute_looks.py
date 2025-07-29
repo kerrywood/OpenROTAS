@@ -25,10 +25,9 @@
 import ctypes 
 import numpy as np
 import pandas as pd
-from astrostandards.utils import helpers
 
 # -----------------------------------------------------------------------------------------------------
-def compute_looks(     df_sensor : pd.DataFrame,
+def compute_looks( df_sensor : pd.DataFrame,
                    df_object : pd.DataFrame,
                    INTERFACE ):
     '''
@@ -39,7 +38,7 @@ def compute_looks(     df_sensor : pd.DataFrame,
         
         '''
     # we need a data holder for the output of ECIToTopoComps
-    TOPO = helpers.astrostd_named_fields( INTERFACE.AstroFuncDll, prefix='XA_TOPO_' )
+    TOPO = INTERFACE.helpers.astrostd_named_fields( INTERFACE.AstroFuncDll, prefix='XA_TOPO_' )
     
     # check that the dates are aligned
     for A,B in zip( df_object['ds50_utc'].values, df_sensor['ds50_utc'].values) : 
@@ -71,10 +70,9 @@ def compute_looks(     df_sensor : pd.DataFrame,
 if __name__ == "__main__":
     import os
     import sys
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     
     from datetime import datetime,timedelta,timezone
-    from astrostandards.utils import load_utils as harness
+    import public_astrostandards as harness
     import time_helpers
     import sensor_helper
 
@@ -86,7 +84,7 @@ if __name__ == "__main__":
 
     # generate some test data
     now   = datetime( year=2025, month=4, day=30 )
-    dates = [ now + timedelta( minutes=X ) for X in range(0,1440) ]
+    dates = [ now + timedelta( minutes=X ) for X in range(0,1440*5,5) ]
     # use the time_helpers to initialize the dataframe with times
     dates_f = time_helpers.convert_times( dates, harness )
     
@@ -112,6 +110,5 @@ if __name__ == "__main__":
     sundown = results[ results['XA_TOPO_EL'] < 0 ]
     # show those times when there's a big jump
     idx = np.where( np.diff( sundown['ds50_utc_sensor'] ) > 10/1440 ) 
-    # print(idx)
-    # print( sundown['datetime_sensor'].values )
-    for i in idx: print( sundown.iloc[i])
+    #for i in idx: print( sundown.iloc[i])
+    print( sundown[ ['datetime_sensor','XA_TOPO_EL'] ] )

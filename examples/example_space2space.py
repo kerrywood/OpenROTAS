@@ -31,7 +31,7 @@ if __name__ == '__main__':
     from datetime import datetime,timedelta,timezone
     import pandas as pd
     
-    from astrostandards.utils import load_utils as harness
+    import public_astrostandards as harness
     from OpenROTAS import time_helpers
     from OpenROTAS import sgp4_prop
     from OpenROTAS import sensor_helper

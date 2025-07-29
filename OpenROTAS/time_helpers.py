@@ -24,17 +24,13 @@
 
 from datetime import datetime 
 import pandas as pd
-from astrostandards.utils import helpers
 
 # -----------------------------------------------------------------------------------------------------
 def convert_times( datetimes : list[ datetime ] ,
                    INTERFACE ):
         # convert the datetimes to astrostandard epochs
     def safeConvert( dt ):
-        try :
-            return helpers.datetime_to_ds50( dt, INTERFACE.TimeFuncDll )
-        except Exception as e: 
-            return -1 
+        return INTERFACE.helpers.datetime_to_ds50( dt, INTERFACE.TimeFuncDll )
         
     ds50_utc = [ safeConvert(X) for X in datetimes ]
 
@@ -50,9 +46,8 @@ def convert_times( datetimes : list[ datetime ] ,
 if __name__ == '__main__':
     import os
     import sys
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from datetime import timedelta
-    from astrostandards.utils import load_utils as harness
+    import public_astrostandards as harness
 
     # init all the Dll's
     harness.init_all()
@@ -63,6 +58,6 @@ if __name__ == '__main__':
     # generate some test data
     now   = datetime.utcnow()
     dates = [ now + timedelta( minutes=X ) for X in range(0,1440) ]
-    print(dates)
+    #print(dates)
     print(convert_times( dates, harness) )
 

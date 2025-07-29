@@ -83,7 +83,7 @@ if __name__ == "__main__":
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
     from datetime import datetime,timedelta
-    from astrostandards.utils import load_utils as harness
+    import public_astrostandards as harness
     import time_helpers
 
     # init all the Dll's
