@@ -85,6 +85,7 @@ if __name__ == '__main__':
     # EXTRA CREDIT
     # compute the sun and the moon and see where those are.. fuse the answers
     # (you can do this for the moon as well (note that you can re-use sun/moon position if you have multiple calls)
+    # obviously, you wouldn't want to re-compute sun location for every satellite.. just re-use the time slices
     sun_f           = dates_f.copy()   # make a copy of the dates
     sun_f['teme_p'] = sensor_helper.sun_at_time( sun_f , harness )  # compute where the sun is in ECI, and store it for futher calls
     sun_f           = sensor_helper.eci_to_llh( sun_f, harness )    # annotate those rows with the LLA values (for looks)

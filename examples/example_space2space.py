@@ -75,6 +75,7 @@ if __name__ == '__main__':
     tdrs_df = sensor_helper.eci_to_llh( tdrs_df, harness )
     
     ## STEP 4 : compute looks from LEO to GEO
+    # compute looks arguments are <from> <to> <harness> (where from is your observer)
     looks = compute_looks.compute_looks( iss_df, tdrs_df, harness )
     # dates are duplicated because we fused the frames for looks, "sensor" is the sensor column
     print('Looks dataframe has columns : {}'.format( looks.columns.values.tolist() ) )

@@ -40,9 +40,11 @@ def compute_looks( df_sensor : pd.DataFrame,
     # we need a data holder for the output of ECIToTopoComps
     TOPO = INTERFACE.helpers.astrostd_named_fields( INTERFACE.AstroFuncDll, prefix='XA_TOPO_' )
     
-    # check that the dates are aligned
-    for A,B in zip( df_object['ds50_utc'].values, df_sensor['ds50_utc'].values) : 
-        assert np.isclose(A,B,.0000001)
+    
+    # check that the dates are aligned (this can be rather slow, so you can decide if you NEED to do
+    # this or not.  If you're sure they're time aligned and you want speed, remove this
+    time_diff = df_object['ds50_utc'].values - df_sensor['ds50_utc'].values
+    assert np.max( np.abs( time_diff) ) < 1e-7
     
     tdf = pd.concat( (df_sensor.add_suffix('_sensor'), df_object.add_suffix('_object')), 
                     axis=1 )

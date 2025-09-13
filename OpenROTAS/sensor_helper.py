@@ -4,7 +4,7 @@ import pandas as pd
 # from astrostandards.utils import helpers
 
 # -----------------------------------------------------------------------------------------------------
-def llh_to_eci( df : list[ float ],
+def llh_to_eci( df : pd.DataFrame,
                 INTERFACE ) :
     '''
     assume that the dataframe "df" has lat / lon / height and ds50_utc (from time_helpers)
@@ -21,7 +21,7 @@ def llh_to_eci( df : list[ float ],
 
 
 # -----------------------------------------------------------------------------------------------------
-def eci_to_llh( df : list[ float ],
+def eci_to_llh( df : pd.DataFrame,
                 INTERFACE ) :
     '''
     assuming dataframe "df" has "teme_p" and ds50_utc in each row (TEME position vector and ds50 from time_helpers)
@@ -39,7 +39,6 @@ def eci_to_llh( df : list[ float ],
     df['lon']    = [ T[1] for T in tv ]
     df['height'] = [ T[2] for T in tv ]
     return df
-
 
 # -----------------------------------------------------------------------------------------------------
 def sun_at_time(  df : pd.DataFrame, # must have the times set
@@ -101,7 +100,6 @@ if __name__ == "__main__":
 
     # use the time_helpers to initialize the dataframe with times
     dates_f = time_helpers.convert_times( dates, harness )
-
 
     # test the llh_to_eci function
     dates_f ['lat']    = 0
