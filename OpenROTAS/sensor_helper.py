@@ -7,8 +7,9 @@ import pandas as pd
 def llh_to_eci( df : list[ float ],
                 INTERFACE ) :
     '''
-    given a lat / lon / alt tuple and a set of astrostandard epoch'd dates,
-    give back the ECI position (TEME)
+    assume that the dataframe "df" has lat / lon / height and ds50_utc (from time_helpers)
+
+    this will annotate the frame with the LLA for each row entry
     '''
     sen_eci = (ctypes.c_double * 3)()
     def getECI( R ):
@@ -23,8 +24,8 @@ def llh_to_eci( df : list[ float ],
 def eci_to_llh( df : list[ float ],
                 INTERFACE ) :
     '''
-    given a dataframe with columns `teme_p` and `ds50_utc`, covert the 
-    eci coordinates to llh
+    assuming dataframe "df" has "teme_p" and ds50_utc in each row (TEME position vector and ds50 from time_helpers)
+    annotate the frame with the lat lon height of each of those rows
     '''
     llh  = (ctypes.c_double * 3)()
     
@@ -44,8 +45,9 @@ def eci_to_llh( df : list[ float ],
 def sun_at_time(  df : pd.DataFrame, # must have the times set
                   INTERFACE ):
     '''
-    given a set of dates in the format output by time_helpers.convert_times, output the 
-    sun position at those times
+    assume that df has been prepared like time_helpers outputs
+
+    return the position of the sun at those times (do NOT annotate frame)
     '''
     sun_v  = (ctypes.c_double * 3)()
     sun_m  = ctypes.c_double()
@@ -61,17 +63,18 @@ def sun_at_time(  df : pd.DataFrame, # must have the times set
 def moon_at_time(  df : pd.DataFrame, # must have the times set
                   INTERFACE ):
     '''
-    given a set of dates in the format output by time_helpers.convert_times, output the 
-    moon position at those times
+    assume that df has been prepared like time_helpers outputs
+
+    return the position of the moon at those times (do NOT annotate frame)
     '''
-    sun_v  = (ctypes.c_double * 3)()
-    sun_m  = ctypes.c_double()
+    moon_v  = (ctypes.c_double * 3)()
+    moon_m  = ctypes.c_double()
     # the routine gives us a look vector and magnitude
-    sun_p = (ctypes.c_double * 3)( * (np.array( sun_v ) * sun_m ) )
-    # compute the sun location at times 
+    moon_p = (ctypes.c_double * 3)( * (np.array( moon_v ) * sun_m ) )
+    # compute the moon location at times 
     def getMoon( X ):
-        INTERFACE.AstroFuncDll.CompMoonPos( X, sun_v, sun_m ) 
-        return list( (ctypes.c_double * 3)( * (np.array( sun_v ) * sun_m ) ) )
+        INTERFACE.AstroFuncDll.CompMoonPos( X, moon_v, moon_m ) 
+        return list( (ctypes.c_double * 3)( * (np.array( moon_v ) * moon_m ) ) )
     return [ getMoon(X)  for X in df['ds50_et'] ]
 
 

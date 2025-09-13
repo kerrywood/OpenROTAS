@@ -47,16 +47,21 @@ if __name__ == '__main__':
     ## STEP 2 : setup some dates that we'll investigate
     # generate some test data
     now   = datetime(year=2025,month=4,day=30)
-    dates = [ now + timedelta( minutes=X ) for X in range(0,1440) ]
+    dates = [ now + timedelta( minutes=X ) for X in range(0,1440*5) ]
+    print()
+    print('Selecting some dates : {} -- {}, {} total timesteps'.format( 
+                                                                       dates[0], dates[-1], len(dates) ) )
+    print()
     # use the time_helpers to initialize the dataframe with times
     dates_f = time_helpers.convert_times( dates, harness )
     
     
     # STEP 3 : generate ephem for our two satellites, setup frames with necessary data
+    print('Propagating two TLE to those dates (aligned) and then annotating with LLH (for looks)')
     iss_ephem = sgp4_prop.sgp4_prop( 
                                     '1 25544U 98067A   25119.19035294  .00013779  00000-0  25440-3 0  9996',
                                     '2 25544  51.6352 189.7367 0002491  81.0639 279.0631 15.49383308507563',
-                                    dates_f['ds50_utc'] , 
+                                    dates_f,
                                     harness )
     iss_df = pd.concat( (dates_f.copy(), iss_ephem), axis=1 )
     iss_df = sensor_helper.eci_to_llh( iss_df, harness )
@@ -64,7 +69,7 @@ if __name__ == '__main__':
     tdrs_ephem = sgp4_prop.sgp4_prop( 
                                     '1 27566U 02055A   25119.03837147 -.00000224  00000-0  00000+0 0  9997',
                                     '2 27566   9.5417  47.8538 0008706 288.8984 161.9044  1.00666936 82076',
-                                    dates_f['ds50_utc'] , 
+                                    dates_f,
                                     harness )
     tdrs_df = pd.concat( (dates_f.copy(), tdrs_ephem), axis=1 )
     tdrs_df = sensor_helper.eci_to_llh( tdrs_df, harness )
@@ -72,5 +77,6 @@ if __name__ == '__main__':
     ## STEP 4 : compute looks from LEO to GEO
     looks = compute_looks.compute_looks( iss_df, tdrs_df, harness )
     # dates are duplicated because we fused the frames for looks, "sensor" is the sensor column
+    print('Looks dataframe has columns : {}'.format( looks.columns.values.tolist() ) )
+    print()
     print(looks[['datetime_sensor','XA_TOPO_RANGE','XA_TOPO_AZ','XA_TOPO_EL','XA_TOPO_RA','XA_TOPO_DEC']] )
-    print(looks.columns)

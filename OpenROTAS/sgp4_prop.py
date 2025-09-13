@@ -28,10 +28,16 @@ from datetime import datetime
 
 
 # ------------------------------------------------------------------------------------------
-def sgp4_prop(    line1     : str,            # TLE line1
-                 line2      : str,            # TLE line2
-                 ds50_utc   : list[ float ],  # astrostandard epoch (UTC)
-                 INTERFACE ):
+def sgp4_prop(   line1       : str,            # TLE line1
+                 line2       : str,            # TLE line2
+                 dates_df    : pd.DataFrame,    # prepared by time_helpers
+                 INTERFACE ) :
+    '''
+    given a dates dataframe from time_helpers, propagate the TLE to those times
+
+    do NOT fuse them together; we might want to rename columns, you can do
+    ephem_f = pd.concat( (dates_f.copy(),ephem_f), axis=1 )
+    '''
     
     INTERFACE.TleDll.TleRemoveAllSats()
     INTERFACE.Sgp4PropDll.Sgp4RemoveAllSats()
@@ -60,7 +66,7 @@ def sgp4_prop(    line1     : str,            # TLE line1
         return { 'teme_p' : list(pos), 'teme_v' : list(vel) }
 
     #datestr = [ ds50_to_str(X) for X in ds50 ]
-    return pd.DataFrame([doProp(X) for X in ds50_utc ] )
+    return pd.DataFrame([doProp(X) for X in dates_df['ds50_utc'] ])
     
 # ------------------------------------------------------------------------------------------
 # def sgp4proc_interval(      line1 : str,            # TLE line1
@@ -100,7 +106,7 @@ if __name__ == '__main__':
     L2='2 99999   9.7332 113.4837 7006332 206.5371  38.9576 01.00149480000003'
     
     # generate some ephemeris
-    ephemeris = sgp4_prop( L1, L2, dates_f['ds50_utc'] , harness )
+    ephemeris = sgp4_prop( L1, L2, dates_f , harness )
     
     # concat those frames so that dates and eph work together
     ephemeris = pd.concat( (dates_f,ephemeris), axis=1 )

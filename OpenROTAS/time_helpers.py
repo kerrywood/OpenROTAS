@@ -28,7 +28,15 @@ import pandas as pd
 # -----------------------------------------------------------------------------------------------------
 def convert_times( datetimes : list[ datetime ] ,
                    INTERFACE ):
-        # convert the datetimes to astrostandard epochs
+
+    '''
+    given a list of datetimes (Python), convert them using the AstroStandards and return
+    different types: UTC, ET, UT1
+    Note that "ds50" canonically indicates epoch of 1950 (astrostandards) .. at least in this code
+
+    Use this frame when calling other functions (like look angles)
+    '''
+    # cGonvert the datetimes to astrostandard epochs
     def safeConvert( dt ):
         return INTERFACE.helpers.datetime_to_ds50( dt, INTERFACE.TimeFuncDll )
         

@@ -30,7 +30,7 @@ if __name__ == '__main__':
     from datetime import datetime,timedelta,timezone
     import pandas as pd
     
-    from astrostandards.utils import load_utils as harness
+    import public_astrostandards as harness
     from OpenROTAS import time_helpers
     from OpenROTAS import sgp4_prop
     from OpenROTAS import sensor_helper
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     L1='1 99999U 00000A   23038.45547454 +.00000000 +46171+0 +33000-1 4 99992'
     L2='2 99999   9.7332 113.4837 7006332 206.5371  38.9576 01.00149480000003'
     # generate some ephemeris
-    ephem_f = sgp4_prop.sgp4_prop( L1, L2, dates_f['ds50_utc'] , harness )
+    ephem_f = sgp4_prop.sgp4_prop( L1, L2, dates_f , harness )
     # concat those frames so that dates and eph work together
     ephem_f = pd.concat( (dates_f.copy(),ephem_f), axis=1 )
     

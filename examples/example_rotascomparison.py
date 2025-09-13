@@ -26,6 +26,7 @@
 if __name__ == '__main__':
     import os
     import sys
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from datetime import datetime,timedelta,timezone
     import pandas as pd
     
@@ -57,7 +58,7 @@ if __name__ == '__main__':
     iss_ephem = sgp4_prop.sgp4_prop( 
                                     '1 25544U 98067A   25119.19035294  .00013779  00000-0  25440-3 0  9996',
                                     '2 25544  51.6352 189.7367 0002491  81.0639 279.0631 15.49383308507563',
-                                    dates_f['ds50_utc'] , 
+                                    dates_f,
                                     harness )
     # concat the two dataframes (make a copy of the dates and row-by-row stitch with the ephemerides)
     iss_df = pd.concat( (dates_f.copy(), iss_ephem), axis=1 )
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     tdrs_ephem = sgp4_prop.sgp4_prop( 
                                     '1 27566U 02055A   25119.03837147 -.00000224  00000-0  00000+0 0  9997',
                                     '2 27566   9.5417  47.8538 0008706 288.8984 161.9044  1.00666936 82076',
-                                    dates_f['ds50_utc'] , 
+                                    dates_f,
                                     harness )
     tdrs_df = pd.concat( (dates_f.copy(), tdrs_ephem), axis=1 )
     tdrs_df = sensor_helper.eci_to_llh( tdrs_df, harness )
